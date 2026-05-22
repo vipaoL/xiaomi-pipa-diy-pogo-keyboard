@@ -19,9 +19,21 @@ uint8_t encodeByte(uint8_t nonce, uint8_t nibble) {
 }
 
 void sendRawBytes(uint8_t* data, uint8_t len) {
-  for(int i = 0; i < 8; i++) Serial1.write(0x55);
-  Serial1.write(data, len);
-  for(int i = 0; i < 4; i++) Serial1.write(0x55);
+  uint8_t outBuffer[140];
+  uint8_t outIdx = 0;
+
+  for(int i = 0; i < 8; i++) {
+    outBuffer[outIdx++] = 0x55;
+  }
+
+  memcpy(&outBuffer[outIdx], data, len);
+  outIdx += len;
+
+  for(int i = 0; i < 4; i++) {
+    outBuffer[outIdx++] = 0x55;
+  }
+
+  Serial1.write(outBuffer, outIdx);
   Serial1.flush();
 }
 
