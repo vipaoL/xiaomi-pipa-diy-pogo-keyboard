@@ -89,8 +89,6 @@
 #define K_F14        0x69
 #define K_F15        0x6A
 #define K_F16        0x6B
-#define K_F17        0x6C
-#define K_F18        0x6D
 
 #define K_MUTE       0x7F
 #define K_VOL_UP     0x80
@@ -117,6 +115,8 @@
 #define K_NUM_9      0x61
 #define K_NUM_0      0x62
 #define K_NUM_DOT    0x63
+#define K_BR_UP      0x6F
+#define K_BR_DN      0x70
 #define K_MUTE       0x7F
 #define K_VOL_UP     0x80
 #define K_VOL_DN     0x81

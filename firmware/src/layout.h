@@ -64,14 +64,14 @@ const uint8_t KEYMAP[8][16] = {
 };
 
 const uint8_t FN_KEYMAP[8][16] = {
-    {MCU_RST, K_F13,  K_F15,  K_F17,   K_MUTE,   K_VOL_UP,    K_NUMLK,   0,            K_PRTSC, 0,      0,      0,      0,      0,      0,      0},
-    {0,       K_F14,  K_F16,  K_F18,   K_VOL_DN, 0,           K_SCRL,    0,            K_PRTSC, 0,      0,      0,      0,      0,      0,      0},
-    {0,       0,      0,      K_NUM_7, K_NUM_8,  K_NUM_SLASH, 0,         0,            0,       0,      0,      0,      0,      0,      0,      0},
-    {0,       0,      0,      K_NUM_4, K_NUM_9,  0,           0,         K_PGUP,       0,       0,      0,      0,      0,      0,      0,      0},
-    {0,       0,      K_TEST, K_NUM_1, K_NUM_5,  K_NUM_AST,   0,         K_NUM_PLUS,   0,       0,      0,      0,      0,      0,      0,      0},
-    {0,       0,      0,      0,       K_NUM_6,  K_NUM_MINUS, 0,         K_HOME,       K_PGDN,  0,      0,      0,      0,      0,      0,      0},
-    {0,       0,      0,      0,       K_NUM_3,  K_NUM_DOT,   K_NUM_DOT, 0,            K_END,   0,      0,      0,      0,      0,      0,      0},
-    {0,       0,      0,      0,       K_NUM_2,  K_NUM_0,     0,         0,            0,       0,      0,      0,      0,      0,      0,      0},
+    {MCU_RST, K_F13,  K_BR_UP, K_F15,   K_MUTE,   K_VOL_UP,    K_NUMLK,   0,            K_PRTSC, 0,      0,      0,      0,      0,      0,      0},
+    {0,       K_F14,  K_BR_DN, K_F16,   K_VOL_DN, 0,           K_SCRL,    0,            K_PRTSC, 0,      0,      0,      0,      0,      0,      0},
+    {0,       0,      0,       K_NUM_7, K_NUM_8,  K_NUM_SLASH, 0,         0,            0,       0,      0,      0,      0,      0,      0,      0},
+    {0,       0,      0,       K_NUM_4, K_NUM_9,  0,           0,         K_PGUP,       0,       0,      0,      0,      0,      0,      0,      0},
+    {0,       0,      K_TEST,  K_NUM_1, K_NUM_5,  K_NUM_AST,   0,         K_NUM_PLUS,   0,       0,      0,      0,      0,      0,      0,      0},
+    {0,       0,      0,       0,       K_NUM_6,  K_NUM_MINUS, 0,         K_HOME,       K_PGDN,  0,      0,      0,      0,      0,      0,      0},
+    {0,       0,      0,       0,       K_NUM_3,  K_NUM_DOT,   K_NUM_DOT, 0,            K_END,   0,      0,      0,      0,      0,      0,      0},
+    {0,       0,      0,       0,       K_NUM_2,  K_NUM_0,     0,         0,            0,       0,      0,      0,      0,      0,      0,      0},
 };
 
 #endif

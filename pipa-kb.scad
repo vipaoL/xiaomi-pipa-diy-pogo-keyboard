@@ -29,6 +29,9 @@ TEST1 = false;
 // PLEASE PRINT AND TRY THIS BEFORE PRINTING THE FULL MODEL
 TEST2 = false;
 
+// to verify touchpad fits
+TEST3 = false;
+
 w = 253;
 tablet_h = 165;
 tablet_t = 7;
@@ -46,8 +49,8 @@ magnet_h = 1;
 kb_w = 212;
 kb_d = 81;
 kb_h = 4.5;
-kb_v_gap = 1;
-kb_cut_h = kb_h + kb_v_gap * 2;
+kb_v_gap = 0.5;
+kb_cut_h = kb_h + kb_v_gap;
 
 kb_top_notch_w = 6;
 kb_top_notch_h = 1;
@@ -70,6 +73,14 @@ kb_bottom_tabs = [
 kb_flex_w = 30;
 kb_flex_pos = 65;
 kb_flex_space_h = 3;
+
+touchpad = [
+    100,
+    50,
+    1.3
+];
+
+touchpad_extra_h = 2;
 
 // "blue pill" board, but with STM32L051C* and 1.8V LDO
 mcu_board = [60, 23, 8];
@@ -204,6 +215,20 @@ wire_groove_points = [
     [tablet_wires_space_in_joint_pos.x, (connection_part_bottom_joint_pos.y + connection_part_top_joint_pos.y) / 2] + connection_part_pos_2d,
     [tablet_wires_space_in_joint_pos.x, connection_part_top_joint_pos.y] + connection_part_pos_2d,
     [floor((tablet_wires_space_in_joint_pos.x + w / 3) / joint_w + 1) * joint_w, center_part_top_joint_pos.y] + center_part_pos_2d,
+];
+
+touchpad_pos = kb_cut_corner_pos + [-bottom_part_margin + w * 2 / 3, -bottom_part_margin / 4 - touchpad.y / 2, -touchpad.z / 2];
+
+touchpad_wire_groove = [
+    tablet_wires.x,
+    bottom_part_margin,
+    touchpad.z + touchpad_extra_h
+];
+
+touchpad_wire_groove_pos = [
+    touchpad_pos.x + sign((kb_pos.x - kb_w / 2 + kb_flex_pos) - touchpad_pos.x) * touchpad.x / 3,
+    touchpad_pos.y + touchpad.y / 2 + touchpad_wire_groove.y / 2,
+    kb_cut_corner_pos.z - touchpad_wire_groove.z / 2
 ];
 
 module magnet(pos) {
@@ -384,11 +409,21 @@ module bottom_part() {
                     roundedcube([w, bottom_part_l, bottom_part_t], center=true, radius=r, apply_to="z");
                     // we don't need rounded corners at the joint side
                     translate([0, bottom_part_l / 4, 0]) cube([w, bottom_part_l / 2, bottom_part_t], center=true);
+
+                    // touchpad
+                    translate([touchpad_pos.x, touchpad_pos.y, 0])roundedcube([touchpad.x + r*2, touchpad.y + r*2, bottom_part_t], center=true, radius=r, apply_to="z");
                 }
                 // joint will be here
                 translate(bottom_part_joint_pos) cut_for_joint(1);
                 cut_h = bottom_part_t - t;
                 translate([0, bottom_part_l / 2 - t, -bottom_part_t / 2 + cut_h / 2]) cube([w + e, t * 2 + e, cut_h + e], center=true);
+
+                // touchpad
+                translate(touchpad_pos)cube(touchpad + [e*5, e*5, e], center=true);
+                translate(touchpad_pos - [0, 0, touchpad_extra_h / 2 + e])roundedcube(touchpad + [0, 0, touchpad_extra_h], center=true, radius=r * 2, apply_to="z");
+
+                // touchpad wires
+                translate(touchpad_wire_groove_pos + [0, -r / 2, 0])cube(touchpad_wire_groove + [0, e + r, e], center=true);
             }
             // joint
             translate(bottom_part_joint_pos) joint(1);
@@ -466,7 +501,7 @@ module path(points, d = magnet_w*2, line_w = magnet_w/2, h=t, cube_dimensions = 
 
 difference() {
     union() {
-        if (PART == "top" || PART == "all") {
+        if (PART == "top" || PART == "all" && !TEST3) {
             difference() {
                 intersection() {
                     union() {
@@ -510,20 +545,32 @@ difference() {
             translate(bottom_part_offset) {
                 intersection() {
                     bottom_part();
-                    if(TEST2) intersection() {
-                        union() {
-                            translate([tablet_wires_pos.x + kb_flex_pos / 2, kb_pos.y, 0]) cube([3, kb_d, bottom_part_t], center=true);;
-                            translate([tablet_wires_pos.x - kb_flex_pos / 2, kb_pos.y, 0]) cube([3, kb_d, bottom_part_t], center=true);
-                            translate([0, -bottom_part_l / 2 + bottom_part_margin, 0]) cube([w, 3, bottom_part_t], center=true);
-                            translate([0, -bottom_part_l / 2 + bottom_part_margin + kb_d, 0]) cube([w, 3, bottom_part_t], center=true);
-                            translate([kb_pos.x + kb_w / 2, kb_pos.y, 0]) cube([3, kb_d + bottom_part_margin, bottom_part_t], center=true);
-                            translate([kb_pos.x - kb_w / 2, kb_pos.y, 0]) cube([3, kb_d + bottom_part_margin, bottom_part_t], center=true);
-                            translate([tablet_wires_pos.x, 0, 0]) cube([3, bottom_part_l, bottom_part_t], center=true);
-                            translate(kb_wires_channel_pos)cube([mcu_board.x, kb_wires_channel_pos.y, bottom_part_t * 2] + [2, 2, 2], center=true);
-                            translate(mcu_board_pos)cube(mcu_board + [2, 2, 2], center=true);
-                            translate(tablet_wires_space_in_joint_pos) cube(tablet_wires_space_in_joint * 7/2, center=true);
+                    if (TEST2 || TEST3) {
+                        if (TEST2) intersection() {
+                            union() {
+                                translate([tablet_wires_pos.x + kb_flex_pos / 2, kb_pos.y, 0]) cube([3, kb_d, bottom_part_t], center=true);;
+                                translate([tablet_wires_pos.x - kb_flex_pos / 2, kb_pos.y, 0]) cube([3, kb_d, bottom_part_t], center=true);
+                                translate([0, -bottom_part_l / 2 + bottom_part_margin, 0]) cube([w, 3, bottom_part_t], center=true);
+                                translate([0, -bottom_part_l / 2 + bottom_part_margin + kb_d, 0]) cube([w, 3, bottom_part_t], center=true);
+                                translate([kb_pos.x + kb_w / 2, kb_pos.y, 0]) cube([3, kb_d + bottom_part_margin, bottom_part_t], center=true);
+                                translate([kb_pos.x - kb_w / 2, kb_pos.y, 0]) cube([3, kb_d + bottom_part_margin, bottom_part_t], center=true);
+                                translate([tablet_wires_pos.x, 0, 0]) cube([3, bottom_part_l, bottom_part_t], center=true);
+                                translate(kb_wires_channel_pos)cube([mcu_board.x, kb_wires_channel_pos.y, bottom_part_t * 2] + [2, 2, 2], center=true);
+                                translate(mcu_board_pos)cube(mcu_board + [2, 2, 2], center=true);
+                                translate(tablet_wires_space_in_joint_pos) cube(tablet_wires_space_in_joint * 7/2, center=true);
+                            }
+                            translate([kb_pos.x, joint_d, kb_pos.z])cube([kb_w, bottom_part_l - bottom_part_margin * 2 + joint_d * 2, bottom_part_t] + [2, 5, 5], center=true);
                         }
-                        translate([kb_pos.x, joint_d, kb_pos.z])cube([kb_w, bottom_part_l - bottom_part_margin * 2 + joint_d * 2, bottom_part_t] + [2, 5, 5], center=true);
+                        if (TEST3 || TEST2) {
+                            dz = bottom_part_t - (touchpad.z + touchpad_extra_h);
+                            translate([touchpad_pos.x, touchpad_pos.y, dz/2])roundedcube([touchpad.x + r / 2, touchpad.y + r / 2, bottom_part_t - dz], center=true, radius=r, apply_to="z");
+                // touchpad
+                            difference() {
+                                translate([touchpad_pos.x, touchpad_pos.y, 0])cube([touchpad.x + r / 2, touchpad.y + r / 2, bottom_part_t], center=true);
+                                translate([touchpad_pos.x, touchpad_pos.y, 0])roundedcube([touchpad.x, touchpad.y, bottom_part_t + e], center=true, radius=r * 2, apply_to="z");
+                            }
+
+                        }
                     }
                 }
             }

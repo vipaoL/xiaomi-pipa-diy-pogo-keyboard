@@ -10,11 +10,6 @@ volatile uint8_t tp_current_byte = 0;
 volatile uint8_t tp_byte_count = 0;
 volatile uint32_t tp_last_edge_time = 0;
 
-uint16_t last_tp_x = 0;
-uint16_t last_tp_y = 0;
-int last_tp_z = 0;
-uint8_t last_tp_btn = 0;
-
 void initTouchpad() {
   mouse.begin();
   attachInterrupt(digitalPinToInterrupt(TP_SCL), handleTouchpadInterrupt, FALLING);
@@ -23,7 +18,7 @@ void initTouchpad() {
 void handleTouchpadInterrupt() {
   uint32_t now = micros();
 
-  if (now - tp_last_edge_time > 2000) {
+  if (now - tp_last_edge_time > 4000) {
     tp_bit_count = 0;
     tp_current_byte = 0;
     tp_byte_count = 0;
@@ -66,93 +61,80 @@ void processTouchpad() {
   tp_data_ready = false;
   interrupts();
 
-  if ((raw[0] & 0x80) != 0) {
+  if ((raw[0] & 0xC0) == 0x80 && (raw[3] & 0xC0) == 0xC0) {
     uint16_t x, y;
     mouse.getAbsoluteAxis(raw, x, y);
     int z = raw[2];
     uint8_t btn = raw[0] & 0x03;
 
-    // from dts:
-    // touchpad-resolution-x = <2879>;
-    // touchpad-resolution-y = <1799>;
+    uint8_t w = ((raw[0] & 0x30) >> 2) | ((raw[3] & 0x04) >> 2);
 
-    x = constrain(x, 1300, 5700);
-    y = constrain(y, 1000, 4800);
+    static uint16_t agm_x0 = 0, agm_y0 = 0;
+    static bool has_agm = false;
 
-    x = map(x, 1300, 5700, 0, 2879);
-    y = map(y, 1000, 4800, 1799, 0);
+    x = map(constrain(x, TOUCHPAD_MIN_X, TOUCHPAD_MAX_X), TOUCHPAD_MIN_X, TOUCHPAD_MAX_X, 0, EXPECTED_RES_X);
+    y = map(constrain(y, TOUCHPAD_MIN_Y, TOUCHPAD_MAX_Y), TOUCHPAD_MIN_Y, TOUCHPAD_MAX_Y, EXPECTED_RES_Y, 0);
 
-#ifdef TP_DEBUG
-    display.clearDisplay();
-    display.setCursor(0, 0);
-
-    display.print("x=");
-    display.println(x);
-
-    display.print("y=");
-    display.println(y);
-
-    display.print("z=");
-    display.println(z);
-
-    display.print("btns: ");
-    display.println(btn, HEX);
-
-    display.println("raw: ");
-    display.print(raw[0], HEX);
-    display.print(" ");
-    display.print(raw[1]);
-    display.print(" ");
-    display.print(raw[2]);
-    display.print(" ");
-    display.print(raw[3]);
-    display.print(" ");
-    display.print(raw[4]);
-    display.print(" ");
-    display.print(raw[5]);
-    display.println();
-
-    display.display();
-#endif
-
-    bool stateChanged = false;
-    if (abs((int)x - (int)last_tp_x) > 2 || abs((int)y - (int)last_tp_y) > 2 ||
-        (z > 10 && last_tp_z <= 10) || (z <= 10 && last_tp_z > 10) ||
-        btn != last_tp_btn) {
-      stateChanged = true;
+    if (w == 2) {
+      agm_x0 = x;
+      agm_y0 = y;
+      has_agm = true;
+      return;
     }
 
-    if (stateChanged) {
-      uint8_t payload[20] = {0};
-
-      payload[0] = btn;
-
-      if (z > 10) {
-        payload[1] = 0x01;
-
-        payload[2] = x & 0xFF;
-        payload[3] = (x >> 8) & 0xFF;
-
-        payload[4] = y & 0xFF;
-        payload[5] = (y >> 8) & 0xFF;
-      } else {
-        payload[1] = 0x00;
-
-        payload[2] = 0;
-        payload[3] = 0;
-        payload[4] = 0;
-        payload[5] = 0;
-      }
-
-      sendPacket(PACKET_ID_TOUCHPAD_REPORT, payload, 20);
-      //sendTest(PACKET_ID_TOUCHPAD_REPORT);
-      digitalWrite(PC13, millis() % 2);
-
-      last_tp_x = x;
-      last_tp_y = y;
-      last_tp_z = z;
-      last_tp_btn = btn;
+    uint8_t fingers = 0;
+    if (z > 25) {
+      if (w >= 4) fingers = 1;
+      else if (w == 0) fingers = 2;
+      else if (w == 1) fingers = 3;
     }
+
+    uint8_t len = 1 + 5 * fingers;
+
+    uint8_t payload[20] = {0};
+
+    payload[0] = btn;
+
+    if (fingers >= 1) {
+      uint16_t x0 = (fingers == 2 && has_agm) ? agm_x0 : x;
+      uint16_t y0 = (fingers == 2 && has_agm) ? agm_y0 : y;
+
+      if (x0 == 0) x0 = 1;
+      if (y0 == 0) y0 = 1;
+
+      payload[1] = 0x10;
+      payload[2] = x0 & 0xFF;
+      payload[3] = (x0 >> 8) & 0xFF;
+      payload[4] = y0 & 0xFF;
+      payload[5] = (y0 >> 8) & 0xFF;
+    }
+
+    if (fingers >= 2) {
+      uint16_t x1 = has_agm ? x : x + 256;
+      uint16_t y1 = has_agm ? y : y + 256;
+
+      payload[6] = 0x20;
+      payload[7] = x1 & 0xFF;
+      payload[8] = (x1 >> 8) & 0xFF;
+      payload[9] = y1 & 0xFF;
+      payload[10] = (y1 >> 8) & 0xFF;
+    }
+
+    if (fingers == 3) {
+      uint16_t x2 = (x > 256) ? x - 256 : 0;
+      uint16_t y2 = (y > 256) ? y - 256 : 0;
+
+      payload[11] = 0x30;
+      payload[12] = x2 & 0xFF;
+      payload[13] = (x2 >> 8) & 0xFF;
+      payload[14] = y2 & 0xFF;
+      payload[15] = (y2 >> 8) & 0xFF;
+    }
+
+    sendPacket(PACKET_ID_TOUCHPAD_REPORT, payload, 20);
+    digitalWrite(PC13, fingers < 1);
+
+    has_agm = false;
   } else {
     noInterrupts();
     tp_byte_count = 0;

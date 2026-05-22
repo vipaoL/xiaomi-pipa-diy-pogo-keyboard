@@ -15,6 +15,7 @@ void initDisplay() {
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 0);
     display.println("_");
+    display.setCursor(0, 0);
     display.display();
   }
 }
