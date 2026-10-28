@@ -25,7 +25,10 @@ Actually, it is most likely a voltage drop that is being checked. However, if th
 
 Power path: VCC -> LDO -> MCU
 ## Firmware
-The firmware is based on Arduino Framework. Apply `PS2Mouse.patch`, use PlatformIO to build the firmware.
+The firmware is based on Arduino Framework.
+- Apply `PS2Mouse.patch`
+- Use `firmware/extract_lookup_table.py` to generate `protocol_encoding_table.h`
+- Use PlatformIO to build the firmware.
 ## Case
 Designed in OpenSCAD
 
